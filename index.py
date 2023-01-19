@@ -13,24 +13,20 @@ def VerifyLength(TextoParaVerificar, TipoDeVerificacao):
             return False;
     return True;
 
-def UsuarioExiste(UserName):
-    #onjetivo dessa função é verficar se o Nome de usuario existe na lista
-    DadosUteis = {"UsuarioExiste": False, "index": 0};
 
-    #essa vericação é caso esse seja o primeiro usuario cadastrado.
-    if(len(userList) == 0):
-        DadosUteis["UsuarioExiste"] = False;
-        return DadosUteis;
+def UsuarioExiste(UserName):
+    #objetivo dessa função é verficar se o Nome de usuario existe na lista
+    #essa função serve de apoio para a função de login
+    DadosUteis = {};
 
     #essa função é usado para cadastro e consulta
     for index in range(len(userList)):
         if(userList[index]["Nome"] == UserName):
-            DadosUteis["UsuarioExiste"] = True;
-            DadosUteis["index"] = index;
+            DadosUteis = {"UsuarioExiste":  True, "index": index};
             return DadosUteis;
-            break;
         else:
-            return DadosUteis;
+            return False;
+    DadosUteis = {};
 
 
 def CleanTerminal():
@@ -77,12 +73,13 @@ def Cadastrar():
             print("O nome de usuario não pode estar Vazio ou a quantidade de letras é maior que 25 caracteres tente novamente");
             break;
 
-        #UserStatus recebe o retorno da função UsuarioExiste aqui se o usuario existir um erro é emitido
-        UserStatus = UsuarioExiste(Nome);
-        if(UserStatus["UsuarioExiste"] == True):
-            CleanTerminal()
-            print("O nome de usuario deve ser unico")
-            break;
+        #verifica se existe algum usuario cadastrado
+        if(not len(userList) == 0):
+            UserStatus = UsuarioExiste(Nome);
+            if(UserStatus != False):
+                CleanTerminal()
+                print("Nome de usuario ja cadastrado")
+                break;
 
         Senha = str(input("Digite sua Senha: "));
         if (VerifyLength(Senha, "Senha") == False):
@@ -103,61 +100,46 @@ def Cadastrar():
         break;
 
 
-def Consultar(EditOrConsult):
+
+def Login():
     print("+=+=+=++=+=ESCOLA ASSIS - LOGIN=+=+=++=+=+=");
-    UserName = str(input("Digite o Nome de Usuario cadastrado: "));
-    HasUser = False;
-    Index = 0;
-    UserGotPermission = False;
 
-    #UserStatus recebe o retorno da função UsuarioExiste aqui se o usuario existir um erro é emitido
-    #Essa variavel tem o mesmo nome nessa função e na função de cadastro ambas tem o mesmo objetivo
-    UserStatus = UsuarioExiste(UserName);
-    if(UserStatus["UsuarioExiste"] != False):
-        HasUser = True;
-        Index = UserStatus["index"];
-
+    while True:
+        UserName = str(input("Digite o Nome de Usuario cadastrado: "));
+        UserStatus = UsuarioExiste(UserName);
     
-    
-    
-    
-    
-    #a funça editar esta pulando a etapa de verficação de senha 
-
-
-
-
-
-
-    #usuario não encontrado
-    if HasUser == False:
-        CleanTerminal();
-        print("usuario nao encontrado");
-
-    #verificando se a senha do usuario confere
-    while HasUser:
-        Pass = str(input("Digite a senha: "));
-        if(Pass == userList[Index]["Senha"]):
-            UserGotPermission = True;
+        if(UserStatus == False):
+            CleanTerminal()
             break;
-        CleanTerminal()
+    
+        Pass = str(input("Digite a senha: "));
+        if(Pass == userList[UserStatus["index"]]["Senha"]):
+            return UserStatus;
+        else:
+            print("Senha Incorreta");
+            CleanTerminal()
+            break;
 
-    #a função consultar tambem é usada para consultas pela função Edit entao é aqui que sera verificado quem esta usando essa função
-    if(EditOrConsult == "Editar"):
-        return Index;
-    else:
-        #se a função for usado para consulta e se o usuario tiver a permissão sera exibido as Informações referente a sua conta
-        if(UserGotPermission):
-            print("Nome: ", userList[Index]["Nome"]);
-            print("Senha: ", userList[Index]["Senha"]);
-            print("Endereço: ", userList[Index]["Endereço"]);
+    CleanTerminal();
+    print("usuario nao encontrado");
+    return False;
 
 
-def Edit(Edit):
+def Consultar():
+    UserExist = Login();
+    while UserExist:
+        Index = UserExist["index"];
+        CleanTerminal();
+        print("Nome: ", userList[Index]["Nome"]);
+        print("Senha: ", userList[Index]["Senha"]);
+        print("Endereço: ", userList[Index]["Endereço"]);
+        break;
+
+def Edit():
     #a função Consultar vai retornar um boolean para saber se o usuario tem permissão para editar
-    Index = Consultar(Edit);
+    UserStatus = Login();
 
-    if(Index != -1):
+    if(UserStatus != False):
         CleanTerminal();
         PainelEditar();
         operacao = int(input(">> "));
@@ -168,33 +150,36 @@ def Edit(Edit):
 
                 case 1:
                     NewUserName = str(input("Digite o novo nome De usuario: "));
-                    ActualUserName = userList[Index]["Nome"];
-                    if(len(NewUserName) <= 0): #tratamento caso input estaja vazio
-                        print("O nome de usuario não pode estar vazio");
-                        
-                    elif(ActualUserName == NewUserName):
+                    ActualUserName = userList[UserStatus["index"]]["Nome"];
+
+                    if(ActualUserName == NewUserName):
                         print("O Novo nome de usuario deve ser diferente do Atual");
+                        break;
+
+                    if(not VerifyLength(NewUserName, "UserName")): #tratamento caso input estaja vazio
+                        print("O nome de usuario não pode estar vazio e nao pode ser maior que 25 caracteres");
                          
                     # se todas as condições forem atendidas o Nome de usuario sera alterado
                     else:
-                        userList[Index]["Nome"] = NewUserName;
+                        userList[UserStatus["index"]]["Nome"] = NewUserName;
                         CleanTerminal();
                         print("alterado com sucesso");
                         break;            
 
                 case 2:
                     NewUserPass = str(input("Digite a nova Senha: "));
-                    ActualUserPass = userList[Index]["Senha"];
-                    if(len(NewUserPass) == 0 or len(NewUserPass) <= 4):
-                        print("A senha deve ser maior que 4 digitos");
-                        
-                    elif(ActualUserPass == NewUserPass):
+                    ActualUserPass = userList[UserStatus["index"]]["Senha"];
+
+                    if(ActualUserPass == NewUserPass):
                         CleanTerminal();
                         print("A nova senha não pode ser igual a senha atual.");
+
+                    if(not VerifyLength(NewUserPass, "Senha")):
+                        print("A senha deve ser maior que 4 digitos");
                     
                     # se todas as condições forem atendidas a senha sera alterada
                     else: 
-                        userList[Index]["Senha"] = NewUserPass;
+                        userList[UserStatus["index"]]["Senha"] = NewUserPass;
                         CleanTerminal();
                         print("alterado com sucesso");
                         break;                    
@@ -212,9 +197,9 @@ while True:
         case 1:
             Cadastrar();
         case 2:
-            Consultar("Consultar");
+            Consultar();
         case 3:
-            Edit("Editar");
+            Edit();
         case 4:
             break;
         case _:
